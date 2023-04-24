@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: auth-service
+  cloud:
+    config:
+      enabled: true
+      uri: http://localhost:8081
+
+jwt:
+  secret: 1E82D3E1BD1C72ACBA498AB58C4551E82D3E1BD1C72ACBA498AB58C4551E82D3E1BD1C72ACBA498AB58C4551E82D3E1BD1C72ACBA498AB58C4551E82D3E1BD1C72ACBA498AB58C45
