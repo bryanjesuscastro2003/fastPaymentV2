@@ -66,9 +66,11 @@ public class AuthUserService {
                     .lastname(registerUserDto.getLastname())
                     .email(registerUserDto.getEmail())
                     .phoneNumber(registerUserDto.getPhoneNumber())
+                    .username(registerUserDto.getUsername())
                     .password(password)
                     .role("USER")
                     .build();
+            authUserRepository.insert(newProfile);
             var token = jwtProvider.generateJwt(newProfile);
             return TokenDto.builder()
                     .ok(true)
