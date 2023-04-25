@@ -93,6 +93,7 @@ public class AuthUserService {
                    .ok(false)
                    .message("Such username is already registered")
                    .token(null)
+                       .data(null)
                    .build();
            String username = jwtProvider.extractUsername(token);
            if(authUserRepository.findByUsername(username).isEmpty())
@@ -101,12 +102,14 @@ public class AuthUserService {
                .ok(true)
                .message("Health token")
                .token(token)
+                   .data(username)
                .build();
        }catch (Exception e){
            return TokenDto.builder()
                .ok(false)
                .message("Unexpected error with the server :/")
                .token(null)
+                   .data(null)
                .build();
        }
     }

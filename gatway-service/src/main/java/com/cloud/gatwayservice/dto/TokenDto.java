@@ -13,4 +13,5 @@ public class TokenDto {
   private boolean ok;
   private String message;
   private String token;
+  private String data;
 }

@@ -1,43 +1,52 @@
 package com.cloud.authservice.adapters.in.controller;
 
-import com.cloud.authservice.adapters.in.dto.AuthUserDto;
-import com.cloud.authservice.adapters.in.dto.RegisterUserDto;
-import com.cloud.authservice.adapters.out.dto.TokenDto;
-import com.cloud.authservice.adapters.out.services.AuthUserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.cloud.authservice.application.config.WebAdapter;
+import com.cloud.authservice.application.port.in.commands.AuthUserCommand;
+import com.cloud.authservice.application.port.in.commands.RegisterUserCommand;
+import com.cloud.authservice.application.port.in.ports.AuthUserPort;
+import com.cloud.authservice.application.port.in.ports.RegisterUserPort;
+import com.cloud.authservice.application.port.in.ports.ValidateJwtPort;
+import com.cloud.authservice.application.port.out.commands.TokenCommand;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@WebAdapter
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
-    @Autowired
-    private AuthUserService authUserService;
+    private final AuthUserPort authUserPort;
+    private final RegisterUserPort registerUserPort;
+    private final ValidateJwtPort validateJwtPort;
+
+    public AuthController(AuthUserPort authUserPort, RegisterUserPort registerUserPort, ValidateJwtPort validateJwtPort) {
+        this.authUserPort = authUserPort;
+        this.registerUserPort = registerUserPort;
+        this.validateJwtPort = validateJwtPort;
+    }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenDto> login(
-            @RequestBody AuthUserDto authUserDto
-            ){
-         TokenDto tokenDto = authUserService.loginProfile(authUserDto);
-         return ResponseEntity.ok(tokenDto);
+    public ResponseEntity<TokenCommand> login(
+            @RequestBody AuthUserCommand authUserDto
+    ){
+        return ResponseEntity.ok(authUserPort.loginProfile(authUserDto));
     }
 
     @PostMapping("/logup")
-    public ResponseEntity<TokenDto> logUp(
-            @RequestBody RegisterUserDto registerUserDto
-            ){
-         TokenDto tokenDto = authUserService.createProfile(registerUserDto);
-         return ResponseEntity.ok(tokenDto);
+    public ResponseEntity<TokenCommand> logUp(
+            @RequestBody RegisterUserCommand registerUserDto
+    ){
+        return ResponseEntity.ok(registerUserPort.createProfile(registerUserDto));
     }
 
     @PostMapping("/validate")
-    public ResponseEntity<TokenDto> validate(
+    public ResponseEntity<TokenCommand> validate(
             @RequestParam String token
     ){
-        TokenDto tokenDto = authUserService.validateToken(token);
+        TokenCommand tokenDto = validateJwtPort.validateToken(token);
         if(!tokenDto.isOk())
             return ResponseEntity.badRequest().build();
         return ResponseEntity.ok(tokenDto);
     }
+
 }

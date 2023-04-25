@@ -1,4 +1,4 @@
-package com.cloud.authservice.adapters.out.dto;
+package com.cloud.authservice.application.port.out.commands;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @Builder
-public class TokenDto {
+public class TokenCommand {
     private boolean ok;
     private String message;
     private String token;

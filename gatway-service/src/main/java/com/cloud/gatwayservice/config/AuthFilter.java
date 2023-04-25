@@ -1,6 +1,7 @@
 package com.cloud.gatwayservice.config;
 
 import com.cloud.gatwayservice.dto.TokenDto;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
@@ -13,6 +14,8 @@ import reactor.core.publisher.Mono;
 
 @Component
 public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> {
+
+    @Autowired
     private WebClient.Builder webClient;
 
     public AuthFilter(WebClient.Builder webClient){
@@ -29,23 +32,20 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
             String [] chunks = tokenHeader.split(" ");
             if(chunks.length != 2 || !chunks[0].equals("Bearer"))
                 return onError(exchange, HttpStatus.BAD_REQUEST);
-            System.out.println("iniciat map " + chunks[1]);
             return webClient.build()
                     .post()
                     .uri("http://auth-service/auth/validate?token="+chunks[1])
                     .retrieve().bodyToMono(TokenDto.class)
                     .map(t -> {
-                        System.out.println(t + " mioe");
-                        t.getToken();
-                        System.out.println(t + " jorge");
-                        System.out.println(exchange);
+                        var token = t.getToken();
+                        var data = t.getData();
+                        System.out.println("token : " + token + " data : " + data);
                         return exchange;
                     }).flatMap(chain::filter);
         }));
     }
 
     public Mono<Void> onError(ServerWebExchange exchange, HttpStatus status){
-        System.out.println(" tuvimos un error" + exchange + " state" + status);
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(status);
         return response.setComplete();
