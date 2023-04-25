@@ -25,5 +25,5 @@ spring:
           uri: lb://cards-service
           predicates:
             - Path=/cards/**
-          #filters:
-          #  - AuthFilter
+          filters:
+            - AuthFilter
