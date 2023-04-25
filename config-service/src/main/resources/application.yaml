@@ -6,6 +6,6 @@ spring:
     config:
       server:
         git:
-          default-label: dev2
+          default-label: dev3
           uri: https://github.com/bryanjesuscastro2003/fastPaymentV2
           search-paths: config-data
