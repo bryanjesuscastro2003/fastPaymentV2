@@ -29,19 +29,23 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
             String [] chunks = tokenHeader.split(" ");
             if(chunks.length != 2 || !chunks[0].equals("Bearer"))
                 return onError(exchange, HttpStatus.BAD_REQUEST);
+            System.out.println("iniciat map " + chunks[1]);
             return webClient.build()
                     .post()
                     .uri("http://auth-service/auth/validate?token="+chunks[1])
                     .retrieve().bodyToMono(TokenDto.class)
                     .map(t -> {
+                        System.out.println(t + " mioe");
                         t.getToken();
                         System.out.println(t + " jorge");
+                        System.out.println(exchange);
                         return exchange;
                     }).flatMap(chain::filter);
         }));
     }
 
     public Mono<Void> onError(ServerWebExchange exchange, HttpStatus status){
+        System.out.println(" tuvimos un error" + exchange + " state" + status);
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(status);
         return response.setComplete();

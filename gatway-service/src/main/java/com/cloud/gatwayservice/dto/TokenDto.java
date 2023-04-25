@@ -10,5 +10,7 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 public class TokenDto {
+  private boolean ok;
+  private String message;
   private String token;
 }
