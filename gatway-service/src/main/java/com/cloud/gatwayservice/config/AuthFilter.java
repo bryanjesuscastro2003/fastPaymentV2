@@ -39,7 +39,6 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
                     .map(t -> {
                         var token = t.getToken();
                         var data = t.getData();
-                        System.out.println("token : " + token + " data : " + data);
                         return exchange;
                     }).flatMap(chain::filter);
         }));
@@ -51,4 +50,5 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
         return response.setComplete();
     }
     public static class Config{}
+
 }
