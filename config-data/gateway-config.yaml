@@ -19,8 +19,7 @@ spring:
         - id: auth-service
           uri: lb://auth-service
           predicates:
-            - Path=/auth/**
-            - Path=/portA1/**
+            - Path=/auth/**, /portA1/**
 
         - id: cards-service
           uri: lb://cards-service
