@@ -76,6 +76,7 @@ public class WalletPersistenceAdapter implements LoadWalletData {
                              .data(data)
                              .build()
              );
+             System.out.println(resNet + " net res");
              if(!resNet.isOk())
                  throw new Exception("Invalid data try again later :/");
              CardModel newCard = mongoServiceCard.createNewCard(
