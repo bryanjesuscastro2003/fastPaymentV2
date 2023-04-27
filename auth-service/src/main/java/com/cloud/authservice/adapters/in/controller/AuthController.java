@@ -7,23 +7,18 @@ import com.cloud.authservice.application.port.in.ports.AuthUserPort;
 import com.cloud.authservice.application.port.in.ports.RegisterUserPort;
 import com.cloud.authservice.application.port.in.ports.ValidateJwtPort;
 import com.cloud.authservice.application.port.out.commands.TokenCommand;
+import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @WebAdapter
 @RestController
 @RequestMapping("/auth")
+@AllArgsConstructor
 public class AuthController {
-
     private final AuthUserPort authUserPort;
     private final RegisterUserPort registerUserPort;
     private final ValidateJwtPort validateJwtPort;
-
-    public AuthController(AuthUserPort authUserPort, RegisterUserPort registerUserPort, ValidateJwtPort validateJwtPort) {
-        this.authUserPort = authUserPort;
-        this.registerUserPort = registerUserPort;
-        this.validateJwtPort = validateJwtPort;
-    }
 
     @PostMapping("/login")
     public ResponseEntity<TokenCommand> login(
@@ -48,5 +43,7 @@ public class AuthController {
             return ResponseEntity.badRequest().build();
         return ResponseEntity.ok(tokenDto);
     }
+
+
 
 }

@@ -16,5 +16,5 @@ public class CardDomain {
     private double mount;
     private String createdOn;
     private String description;
-    private String WalledId;
+    private String walledId;
 }

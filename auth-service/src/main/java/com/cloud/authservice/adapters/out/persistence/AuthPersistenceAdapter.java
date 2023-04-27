@@ -103,7 +103,7 @@ public class AuthPersistenceAdapter implements LoadAuthUserData {
                 throw new Exception("Invalid token");
             return TokenCommand.builder()
                     .ok(true)
-                    .message("Health token")
+                    .message("Healthy token")
                     .token(token)
                     .data(username)
                     .build();

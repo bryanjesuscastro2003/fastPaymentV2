@@ -9,17 +9,16 @@ import com.cloud.cardsservice.application.port.in.commands.CreateCardCommand;
 import com.cloud.cardsservice.application.port.in.commands.CreateWalletCommand;
 import com.cloud.cardsservice.application.port.in.commands.GetWalletCommand;
 import com.cloud.cardsservice.application.port.in.ports.*;
+import com.cloud.cardsservice.application.port.out.commands.DataResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @WebAdapter
 @RestController
-@RequestMapping("/cards")
+@RequestMapping("/money")
 public class CardsController {
 
     private final CreateCardPort createCardPort;
@@ -36,28 +35,33 @@ public class CardsController {
         this.updateCardPort = updateCardPort;
     }
 
-    @GetMapping("/createCard")
-    public String createCard(){
-        createCardPort.createCard(CreateCardCommand.builder()
-                        .user("cavernicola")
-                        .description("Test card cavernicola me")
-                .build());
-        return "card created";
+    @PostMapping("/createWallet")
+    public ResponseEntity<DataResponse> myCards(
+            @RequestBody CreateWalletCommand request
+    ){
+        System.out.println(request + " request");
+        return ResponseEntity.ok(createWalletPort.createWallet(request));
     }
 
-    @GetMapping("/createWallet")
-    public String myCards(){
-        createWalletPort.createWallet(CreateWalletCommand.builder()
-                        .user("cavernicola")
-                .build());
-        return "Walled created";
+    @PostMapping("/createCard")
+    public ResponseEntity<DataResponse> createCard(
+            @RequestBody CreateCardCommand request
+    ){
+        return ResponseEntity.ok(createCardPort.createCard(request));
+    }
+
+    @GetMapping("/myWallet")
+    public ResponseEntity<DataResponse> getUserWallet(
+            @RequestParam String user
+    ){
+        return ResponseEntity.ok(getWalletPort.getWallet(GetWalletCommand.builder()
+                        .user(user)
+                .build()));
     }
 
     @GetMapping("/test")
     public String test(){
-        getWalletPort.getWallet(GetWalletCommand.builder()
-                        .tuitionCard("")
-                .build());
+
         return " test";
     }
 }

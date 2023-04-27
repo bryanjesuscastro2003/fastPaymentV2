@@ -1,4 +1,4 @@
-package com.cloud.cardsservice.application.port.in.commands;
+package com.cloud.cardsservice.adapters.in.net.auth_service.dto.out;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class GetWalletCommand {
-    private String user;
+public class ValidateUserCommandResNet {
+    private boolean ok;
+    private String message;
 }

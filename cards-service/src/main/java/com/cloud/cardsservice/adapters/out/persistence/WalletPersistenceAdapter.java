@@ -1,88 +1,110 @@
 package com.cloud.cardsservice.adapters.out.persistence;
 
+import com.cloud.cardsservice.adapters.in.net.auth_service.dto.in.EncryptDataCommand;
+import com.cloud.cardsservice.adapters.in.net.auth_service.dto.in.ValidateUserCommand;
+import com.cloud.cardsservice.adapters.in.net.auth_service.dto.out.EncryptDataCommandResNet;
+import com.cloud.cardsservice.adapters.in.net.auth_service.dto.out.ValidateUserCommandResNet;
+import com.cloud.cardsservice.adapters.in.net.auth_service.service.AuthServiceFeign;
+import com.cloud.cardsservice.adapters.in.utils.CardActions;
+import com.cloud.cardsservice.adapters.out.ModelMapper;
 import com.cloud.cardsservice.adapters.out.model.CardModel;
 import com.cloud.cardsservice.adapters.out.model.WalletModel;
-import com.cloud.cardsservice.adapters.out.repository.CardRepository;
-import com.cloud.cardsservice.adapters.out.repository.WalletRepository;
+import com.cloud.cardsservice.adapters.out.services.mongo.MongoServiceCard;
+import com.cloud.cardsservice.adapters.out.services.mongo.MongoServiceWallet;
 import com.cloud.cardsservice.application.port.config.PersistenceAdapter;
 import com.cloud.cardsservice.application.port.in.commands.*;
 import com.cloud.cardsservice.application.port.out.LoadWalletData;
 import com.cloud.cardsservice.application.port.out.commands.DataResponse;
+import com.cloud.cardsservice.domain.CardDomain;
+import com.cloud.cardsservice.domain.WalletDomain;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
-
-import java.io.IOException;
-import java.util.Date;
+import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
-import static org.springframework.data.mongodb.core.query.Criteria.where;
 
 @PersistenceAdapter
 public class WalletPersistenceAdapter implements LoadWalletData {
 
     @Autowired
-    private CardRepository cardRepository;
+    private AuthServiceFeign authServiceFeign;
     @Autowired
-    private WalletRepository walletRepository;
+    private MongoServiceWallet mongoServiceWallet;
     @Autowired
-    private MongoTemplate mongoTemplate;
-
-    @Override
-    public DataResponse createCard(CreateCardCommand createCardCommand) {
-        try {
-            Function<String, String> getWalletId = data -> {
-                var n = walletRepository.findByUser(createCardCommand.getUser());
-                return n.map(WalletModel::getId).orElseThrow();
-            };
-            CardModel newCard = CardModel.builder()
-                    .tuitionCard("esucuela")
-                    .nipCard("2345434")
-                    .mount(999)
-                    .createdOn(new Date().toString())
-                    .description(createCardCommand.getDescription())
-                    .walledId(getWalletId.apply(createCardCommand.getUser()))
-                    .build();
-            cardRepository.insert(newCard);
-            Update updateDef = new Update();
-            Query query = new Query();
-            query.addCriteria(Criteria.where("user").is(createCardCommand.getUser()));
-            updateDef.push("cards",newCard.getId());
-            mongoTemplate.findAndModify(query, updateDef, WalletModel.class);
-            return DataResponse.builder()
-                    .ok(true)
-                    .message("Card created ok")
-                    .wallet(null)
-                    .build();
-        }catch (Exception e){
-            System.out.println(e + " meme");
-            return DataResponse.builder()
-                .ok(true)
-                .message("Card error ok")
-                .wallet(null)
-                .build();
-        }
-    }
+    private MongoServiceCard mongoServiceCard;
 
     @Override
     public DataResponse createWallet(CreateWalletCommand createWalletCommand) {
         try {
-            walletRepository.insert(
-                    WalletModel.builder()
+            ValidateUserCommandResNet resNet = authServiceFeign.validateUser(
+                    ValidateUserCommand.builder()
+                            .user(createWalletCommand.getUser())
+                            .build()
+            );
+            if(!resNet.isOk())
+                throw new Exception("Invalid user");
+            WalletModel myWallet = mongoServiceWallet.createWallet(
+                    WalletDomain.builder()
                             .user(createWalletCommand.getUser())
                             .cards(List.of())
+                            .createdOn(LocalTime.now().toString())
                             .build()
             );
             return DataResponse.builder()
                     .ok(true)
-                    .message("ok")
+                    .message("Wallet created ok")
+                    .wallet(ModelMapper.entityToDomainWallet(myWallet))
                     .build();
         }catch (Exception e){
-            return DataResponse.builder().build();
+            return DataResponse.builder()
+                    .ok(false)
+                    .message("Unexpected error creating your wallet :/ -> " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @Override
+    public DataResponse createCard(CreateCardCommand createCardCommand) {
+        try {
+             Map<String, String> data = new HashMap<>();
+             data.put("tuitionCard",CardActions.generateTuitionCard());
+             data.put("nipCard",CardActions.generateNipCard());
+             EncryptDataCommandResNet resNet = authServiceFeign.encryptData(
+                     EncryptDataCommand.builder()
+                             .data(data)
+                             .build()
+             );
+             if(!resNet.isOk())
+                 throw new Exception("Invalid data try again later :/");
+             CardModel newCard = mongoServiceCard.createNewCard(
+                    CardDomain.builder()
+                    .tuitionCard(resNet.getData().get("tuitionCard"))
+                    .nipCard(resNet.getData().get("nipCard"))
+                    .mount(0)
+                    .createdOn(LocalTime.now().toString())
+                    .description(createCardCommand.getDescription())
+                    .walledId(mongoServiceWallet.getWalletIdbyUsername(createCardCommand.getUser()))
+                    .build()
+            );
+            Optional<WalletModel> myWallet = mongoServiceWallet.insertNewCardToWallet(createCardCommand.getUser(),ModelMapper.entityToDomainCard(newCard));
+            if(myWallet.isEmpty())
+                  throw new Exception("Invalid wallet");
+            List<String> tempCards = myWallet.get().getCards();
+            tempCards.add(newCard.getId());
+            myWallet.get().setCards(tempCards);
+            return DataResponse.builder()
+                    .ok(true)
+                    .message("Card created ok")
+                    .wallet(ModelMapper.entityToDomainWallet(myWallet.get()))
+                    .build();
+        }catch (Exception e){
+            return DataResponse.builder()
+                .ok(false)
+                .message("Unexpected error creating your card :/ -> " + e.getMessage())
+                .wallet(null)
+                .build();
         }
     }
 
@@ -95,11 +117,26 @@ public class WalletPersistenceAdapter implements LoadWalletData {
     @Override
     public DataResponse getWallet(GetWalletCommand getWalletCommand) {
         try{
-            System.out.println(walletRepository.findAll());
-            System.out.println(cardRepository.findAll());
-           return DataResponse.builder().build();
+           Optional<WalletModel> walletData = mongoServiceWallet.getUserWallet(getWalletCommand.getUser());
+            if(walletData.isEmpty())
+                throw new Exception("wallet not found");
+           WalletDomain myWallet = ModelMapper.entityToDomainWallet(walletData.get());
+           /*
+           List<CardDomain> cards = mongoServiceCard.getAllUserCards(walletData.get().getId())
+                   .stream()
+                   .map(ModelMapper::entityToDomainCard)
+                   .toList();
+            */
+           return DataResponse.builder()
+                   .ok(true)
+                   .message("Wallet loaded ok")
+                   .wallet(myWallet)
+                   .build();
         }catch (Exception e){
-           return DataResponse.builder().build();
+           return DataResponse.builder()
+               .ok(true)
+               .message("Unexpected error loading data :/")
+               .build();
         }
     }
 
